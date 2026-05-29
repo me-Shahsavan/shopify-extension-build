@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shopify Theme-Extension Build Pipeline — Case Study</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#111831; --card:#151d36; --ink:#e8edf7; --muted:#94a3c0;
+    --green:#34d399; --green-d:#10b981; --blue:#60a5fa; --amber:#fbbf24; --red:#f87171;
+    --purple:#a78bfa; --border:#26304d; --code:#0a0e1c;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#16203f 0%,var(--bg) 60%);
+    color:var(--ink);line-height:1.6}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 22px 90px}
+
+  /* hero */
+  header{text-align:center;padding:46px 0 26px}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--green);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);
+    padding:5px 14px;border-radius:999px;margin-bottom:18px;animation:fadeUp .6s both}
+  h1{font-size:34px;margin:0 0 12px;line-height:1.2;animation:fadeUp .6s .05s both}
+  .sub{color:var(--muted);font-size:18px;max-width:640px;margin:0 auto;animation:fadeUp .6s .1s both}
+  .scroll-hint{margin-top:30px;color:var(--muted);font-size:13px;animation:fadeUp .6s .2s both}
+  .scroll-hint .arrow{display:block;font-size:22px;margin-top:4px;animation:bob 1.6s ease-in-out infinite}
+
+  section{margin:54px 0;animation:fadeUp .7s both}
+  .label{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+  h2{font-size:25px;margin:0 0 14px}
+  p.body{color:#c5cee3;font-size:16px;max-width:720px}
+
+  /* problem split */
+  .split{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center;margin-top:24px}
+  @media(max-width:720px){.split{grid-template-columns:1fr;}.split .vs{transform:rotate(90deg)}}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .panel.bad{border-color:rgba(248,113,113,.35)}
+  .panel.good{border-color:rgba(52,211,153,.35)}
+  .panel h3{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .vs{color:var(--muted);font-weight:700;font-size:14px;text-align:center}
+  pre{margin:0;font-family:"Cascadia Code",Consolas,monospace;font-size:13px;line-height:1.7;color:#cdd8f0;white-space:pre}
+  .x{color:var(--red)} .ok{color:var(--green)} .dim{color:var(--muted)}
+
+  /* pipeline animation */
+  .pipe{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;margin-top:24px;overflow:hidden}
+  .pipe-grid{display:grid;grid-template-columns:1fr 90px 1fr;gap:14px;align-items:center}
+  @media(max-width:720px){.pipe-grid{grid-template-columns:1fr;gap:22px}}
+  .col-title{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;text-align:center}
+  .files{display:flex;flex-direction:column;gap:8px}
+  .file{background:var(--code);border:1px solid var(--border);border-radius:9px;padding:9px 12px;
+    font-family:"Cascadia Code",monospace;font-size:12.5px;color:#cdd8f0;display:flex;align-items:center;gap:8px;
+    opacity:0;transform:translateX(-10px);animation:slideIn .5s forwards}
+  .file .tree{color:var(--muted)}
+  .file.flat{transform:translateX(10px)}
+  .file .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .d-blue{background:var(--blue)} .d-green{background:var(--green)} .d-amber{background:var(--amber)} .d-purple{background:var(--purple)}
+  .engine{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .gear{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--green-d),#0ea5e9);
+    display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 8px 24px rgba(16,185,129,.35);
+    animation:spin 4s linear infinite}
+  .engine .cap{font-size:11px;color:var(--muted);text-align:center;letter-spacing:.5px}
+  .flow-arrow{font-size:20px;color:var(--green);animation:pulse 1.6s ease-in-out infinite}
+
+  .steps{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;justify-content:center}
+  .step{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);border-radius:999px;
+    padding:6px 14px;font-size:13px;color:#bcd2f5}
+  .step b{color:var(--blue)}
+
+  /* decisions */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+  @media(max-width:720px){.cards{grid-template-columns:1fr}}
+  .dcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;
+    transition:.2s}
+  .dcard:hover{border-color:var(--green);transform:translateY(-3px)}
+  .dcard .n{font-size:12px;color:var(--green);font-weight:700;letter-spacing:1px}
+  .dcard h4{margin:6px 0 6px;font-size:16px}
+  .dcard p{margin:0;color:var(--muted);font-size:14px}
+
+  /* transform table */
+  table{width:100%;border-collapse:collapse;margin-top:18px;font-size:14px;background:var(--card);
+    border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  td code{font-family:"Cascadia Code",monospace;font-size:13px;color:#cdd8f0}
+  .arrow-cell{color:var(--green);font-weight:700}
+
+  /* watch demo */
+  .terminal{background:var(--code);border:1px solid var(--border);border-radius:12px;margin-top:20px;overflow:hidden}
+  .term-bar{background:#0d1326;padding:9px 14px;display:flex;gap:7px;align-items:center;border-bottom:1px solid var(--border)}
+  .term-bar .b{width:11px;height:11px;border-radius:50%}
+  .term-bar .b1{background:#ff5f56}.term-bar .b2{background:#ffbd2e}.term-bar .b3{background:#27c93f}
+  .term-bar .t{margin-left:8px;color:var(--muted);font-size:12px}
+  .term-body{padding:16px;font-family:"Cascadia Code",monospace;font-size:13px;line-height:1.9;min-height:140px}
+  .term-line{opacity:0;animation:typeIn .4s forwards}
+  .term-line .save{color:var(--amber)} .term-line .out{color:var(--green)} .term-line .path{color:#cdd8f0}
+
+  /* tradeoff callout */
+  .callout{background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(96,165,250,.08));
+    border:1px solid rgba(167,139,250,.3);border-radius:16px;padding:26px 28px;margin-top:24px}
+  .callout h2{margin-top:0}
+  .callout .big{font-size:18px;color:#e8edf7}
+  .callout .big b{color:var(--purple)}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:60px;padding-top:24px;border-top:1px solid var(--border)}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes slideIn{to{opacity:1;transform:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  @keyframes typeIn{to{opacity:1}}
+  .reveal{opacity:0}
+  .reveal.in{animation:fadeUp .7s both}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">Technical Product · Case Study</span>
+    <h1>Fixing a slow developer inner-loop on Shopify</h1>
+    <p class="sub">Shopify's native hot reload for theme extensions is unreliable,
+      and assets must be flat. Together they forced a slow edit → build → wait loop.
+      A watch build made it instant.</p>
+    <div class="scroll-hint">scroll to walk through it<span class="arrow">↓</span></div>
+  </header>
+
+  <!-- PROBLEM -->
+  <section>
+    <div class="label">The problem</div>
+    <h2>The inner loop was killing team velocity</h2>
+    <p class="body">Two Shopify constraints stacked on top of each other and made
+      every single code change slow — for every developer, dozens of times a day.</p>
+
+    <div class="split">
+      <div class="panel bad">
+        <h3>🐌 Constraint 1 — hot reload is unreliable</h3>
+<pre>Shopify CLI is <span class="dim">supposed</span> to
+hot-reload extension assets…
+
+but it often does a
+<span class="x">full-page reload</span> instead —
+or logs "updated" while the
+change <span class="x">never actually shows up.</span>
+
+<span class="dim">→ you can't trust "save and see it"</span></pre>
+      </div>
+      <div class="vs">stacked<br>with</div>
+      <div class="panel bad">
+        <h3>📦 Constraint 2 — assets must be flat</h3>
+<pre><span class="dim">assets/</span>
+  widget-a/init.js   <span class="x">❌</span>
+  shared/loader.js   <span class="x">❌</span>
+
+  <span class="dim">— no subfolders allowed —</span>
+  referenced by flat filename
+
+<span class="x">→ no modular source layout</span></pre>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;background:var(--code);border:1px solid var(--border);border-radius:12px;padding:18px 20px;font-family:'Cascadia Code',monospace;font-size:13.5px;color:#cdd8f0">
+      <span style="color:var(--red)">edit a file</span>  →  run a manual build  →  <span class="dim">wait</span>  →  refresh  →  <span class="dim">maybe see it</span>
+      <div style="color:var(--muted);font-size:12.5px;margin-top:8px">▲ every change · every developer · dozens of times a day</div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="reveal">
+    <div class="label">The solution</div>
+    <h2>A build step absorbs the constraint — once, centrally</h2>
+    <p class="body">The nested tree is the source of truth. The pipeline compiles,
+      bundles in dependency order, minifies, and writes the flat output Shopify
+      expects. Developers never touch the flattening.</p>
+
+    <div class="pipe">
+      <div class="pipe-grid">
+        <div>
+          <div class="col-title">nested source</div>
+          <div class="files" id="srcFiles">
+            <div class="file" style="animation-delay:.1s"><span class="dot d-blue"></span><span class="tree">shared/loader/</span>page-context.ts</div>
+            <div class="file" style="animation-delay:.25s"><span class="dot d-blue"></span><span class="tree">shared/loader/</span>renderer.ts</div>
+            <div class="file" style="animation-delay:.4s"><span class="dot d-green"></span><span class="tree">widget-a/</span>init.ts</div>
+            <div class="file" style="animation-delay:.55s"><span class="dot d-green"></span><span class="tree">widget-a/</span>view.ts</div>
+            <div class="file" style="animation-delay:.7s"><span class="dot d-amber"></span><span class="tree">widget-b/</span>player.ts</div>
+          </div>
+        </div>
+        <div class="engine">
+          <div class="gear">⚙️</div>
+          <div class="flow-arrow">→</div>
+          <div class="cap">compile<br>bundle<br>minify</div>
+        </div>
+        <div>
+          <div class="col-title">flat assets/</div>
+          <div class="files">
+            <div class="file flat" style="animation-delay:.9s"><span class="dot d-blue"></span>shared-loader.bundle.js</div>
+            <div class="file flat" style="animation-delay:1.05s"><span class="dot d-green"></span>widget-a.bundle.js</div>
+            <div class="file flat" style="animation-delay:1.2s"><span class="dot d-amber"></span>widget-b.bundle.js</div>
+            <div class="file flat" style="animation-delay:1.35s"><span class="dot d-purple"></span>widget-a.bundle.css</div>
+          </div>
+        </div>
+      </div>
+      <div class="steps">
+        <span class="step"><b>1.</b> read nested tree</span>
+        <span class="step"><b>2.</b> order by dependency</span>
+        <span class="step"><b>3.</b> compile TS → JS</span>
+        <span class="step"><b>4.</b> minify</span>
+        <span class="step"><b>5.</b> write flat bundle</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSFORM -->
+  <section class="reveal">
+    <div class="label">The transform</div>
+    <h2>Flattening is deterministic &amp; reversible</h2>
+    <p class="body">A nested path becomes a flat filename by replacing separators —
+      so you can always read where a flat file came from. No collisions, no magic.</p>
+    <table>
+      <thead><tr><th>Nested source</th><th></th><th>Flat asset</th></tr></thead>
+      <tbody>
+        <tr><td><code>shared/loader/widget-loader.ts</code></td><td class="arrow-cell">→</td><td><code>shared-loader-widget-loader.js</code></td></tr>
+        <tr><td><code>widget-a/modules/init.ts</code> + siblings</td><td class="arrow-cell">→</td><td><code>widget-a.bundle.js</code></td></tr>
+        <tr><td><code>widget-a/styles/*.css</code></td><td class="arrow-cell">→</td><td><code>widget-a.bundle.css</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- BEFORE / AFTER -->
+  <section class="reveal">
+    <div class="label">The win</div>
+    <h2>From manual build loop → instant on save</h2>
+    <div class="cards">
+      <div class="dcard" style="border-color:rgba(248,113,113,.3)">
+        <div class="n" style="color:var(--red)">BEFORE</div>
+        <h4>edit → build → wait → refresh</h4>
+        <p>Manual build on every change. Shopify's hot reload flaky — full-page reloads, changes that didn't show. The loop ran dozens of times a day, per developer.</p>
+      </div>
+      <div class="dcard" style="border-color:rgba(52,211,153,.35)">
+        <div class="n">AFTER</div>
+        <h4>just save — it's already there</h4>
+        <p>The watch build recompiles only the changed file and writes its flat asset in ~tens of milliseconds. Deterministic, every time. The team shipped noticeably faster.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WATCH DEMO -->
+  <section class="reveal">
+    <div class="label">The core: watch build</div>
+    <h2>Save → recompile only that file → flat output</h2>
+    <p class="body">This is the heart of the fix. On every save, only the changed
+      file recompiles and its flat counterpart is rewritten in place. The developer
+      never thinks about the flattening — or about Shopify's broken hot reload.</p>
+    <div class="terminal">
+      <div class="term-bar"><span class="b b1"></span><span class="b b2"></span><span class="b b3"></span><span class="t">npm run build:watch</span></div>
+      <div class="term-body" id="term">
+        <div class="term-line" style="animation-delay:.2s">👀 <span class="path">watching src/ …</span></div>
+        <div class="term-line" style="animation-delay:1.2s"><span class="save">saved</span> widget-a/modules/init.ts</div>
+        <div class="term-line" style="animation-delay:1.7s"><span class="out">→ wrote</span> <span class="path">widget-a.bundle.js</span> <span style="color:#64748b">(42ms)</span></div>
+        <div class="term-line" style="animation-delay:2.7s"><span class="save">saved</span> shared/loader/renderer.ts</div>
+        <div class="term-line" style="animation-delay:3.2s"><span class="out">→ wrote</span> <span class="path">shared-loader.bundle.js</span> <span style="color:#64748b">(38ms)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KEY DECISIONS -->
+  <section class="reveal">
+    <div class="label">Design decisions</div>
+    <h2>The choices that made it reliable</h2>
+    <div class="cards">
+      <div class="dcard"><div class="n">01</div><h4>Explicit dependency order</h4>
+        <p>Bundles list files in load order — not alphabetical globbing. Implicit ordering breaks silently in production.</p></div>
+      <div class="dcard"><div class="n">02</div><h4>Two file classes</h4>
+        <p>Most files get bundled; a few are referenced directly from Liquid and can't be — the config makes that split visible, not buried.</p></div>
+      <div class="dcard"><div class="n">03</div><h4>Reversible flattening</h4>
+        <p>Path separators → dashes. You can always trace a flat asset back to its source file.</p></div>
+      <div class="dcard"><div class="n">04</div><h4>Watch as a first-class DX</h4>
+        <p>The inner loop determines daily velocity, so the watch build is designed for speed, not bolted on.</p></div>
+    </div>
+  </section>
+
+  <!-- TRADEOFF -->
+  <section class="reveal">
+    <div class="callout">
+      <div class="label">Why it's a product decision</div>
+      <h2>Pay the complexity once, not per-feature</h2>
+      <p class="big">The constraint is Shopify's. The <b>cost</b> lands on developers —
+        and slow, error-prone builds quietly tax every feature shipped afterward.
+        The trade I chose: <b>add one build step</b> to maintain, to buy a
+        <b>clean modular source tree</b> whose benefit compounds on every future change.
+        For a growing widget platform, that's firmly worth it — the alternative is a
+        flat folder that gets worse every week.</p>
+    </div>
+  </section>
+
+  <footer>
+    Self-contained HTML — no build, no dependencies. Genericized for portfolio use.
+  </footer>
+
+</div>
+
+<script>
+  // reveal-on-scroll
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.15});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
