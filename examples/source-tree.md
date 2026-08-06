@@ -11,6 +11,7 @@ src/
 ├── shared/
 │   └── loader/
 │       ├── widget-loader.ts        # referenced directly from Liquid
+│       ├── widget-loader.css       # referenced directly from Liquid
 │       ├── page-context.ts         # detect page type — must load first
 │       ├── api-service.ts
 │       ├── renderer.ts
@@ -59,7 +60,13 @@ extensions/widget/assets/
 
 Two rules do all the work:
 
-1. **Direct files**: replace `/` with `-`, `.ts` with `.js`. Reversible and
-   collision-free — you can always read where a flat file came from.
+1. **Direct files**: replace `/` with `-`, `.ts` with `.js`. Readable — you can
+   always see where a flat file came from. The mapping is not injective, so the
+   build asserts that no two sources produce the same asset name before it writes
+   anything.
 2. **Bundles**: concatenate the listed files **in order**, compile, minify, emit
-   one flat `.bundle.js` / `.bundle.css`.
+   one flat `.bundle.js` / `.bundle.css`. Concatenation is only valid because
+   bundled modules are global-scoped IIFEs rather than ES modules — the ordering
+   here *is* the dependency graph.
+
+Both trees above are real: `npm run build:bundle` turns the first into the second.

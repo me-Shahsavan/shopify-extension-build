@@ -241,7 +241,7 @@ change <span class="x">never actually shows up.</span>
       <div class="dcard" style="border-color:rgba(52,211,153,.35)">
         <div class="n">AFTER</div>
         <h4>just save — it's already there</h4>
-        <p>The watch build recompiles only the changed file and writes its flat asset in ~tens of milliseconds. Deterministic, every time. The team shipped noticeably faster.</p>
+        <p>The watch build finds the bundle that owns the changed file, rebuilds it in dependency order, and writes the flat asset the page actually loads. Deterministic, every time — and a compile error prints and keeps watching instead of killing the loop.</p>
       </div>
     </div>
   </section>
@@ -249,10 +249,11 @@ change <span class="x">never actually shows up.</span>
   <!-- WATCH DEMO -->
   <section class="reveal">
     <div class="label">The core: watch build</div>
-    <h2>Save → recompile only that file → flat output</h2>
-    <p class="body">This is the heart of the fix. On every save, only the changed
-      file recompiles and its flat counterpart is rewritten in place. The developer
-      never thinks about the flattening — or about Shopify's broken hot reload.</p>
+    <h2>Save → rebuild the owning bundle → flat output</h2>
+    <p class="body">This is the heart of the fix. On every save, the build finds
+      the bundle that contains the changed file, recompiles it in dependency order,
+      and rewrites the flat asset the storefront loads. The developer never thinks
+      about the flattening — or about Shopify's broken hot reload.</p>
     <div class="terminal">
       <div class="term-bar"><span class="b b1"></span><span class="b b2"></span><span class="b b3"></span><span class="t">npm run build:watch</span></div>
       <div class="term-body" id="term">
@@ -274,8 +275,8 @@ change <span class="x">never actually shows up.</span>
         <p>Bundles list files in load order — not alphabetical globbing. Implicit ordering breaks silently in production.</p></div>
       <div class="dcard"><div class="n">02</div><h4>Two file classes</h4>
         <p>Most files get bundled; a few are referenced directly from Liquid and can't be — the config makes that split visible, not buried.</p></div>
-      <div class="dcard"><div class="n">03</div><h4>Reversible flattening</h4>
-        <p>Path separators → dashes. You can always trace a flat asset back to its source file.</p></div>
+      <div class="dcard"><div class="n">03</div><h4>Flattening that fails loudly</h4>
+        <p>Path separators → dashes, so you can trace any flat asset back to its source. Two sources landing on one name aborts the build instead of overwriting an asset in production.</p></div>
       <div class="dcard"><div class="n">04</div><h4>Watch as a first-class DX</h4>
         <p>The inner loop determines daily velocity, so the watch build is designed for speed, not bolted on.</p></div>
     </div>
