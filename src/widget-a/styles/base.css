@@ -1,0 +1,2 @@
+[data-widget-a] { display: grid; gap: 12px; padding: 16px; border-radius: 12px; }
+[data-widget-a][data-theme="dark"] { background: #0f172a; color: #e2e8f0; }

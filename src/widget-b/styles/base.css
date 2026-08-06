@@ -1,0 +1,2 @@
+[data-widget-b] { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
+[data-widget-b].is-playing::after { content: ""; position: absolute; inset: 0; }

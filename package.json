@@ -1,0 +1,18 @@
+{
+  "name": "shopify-extension-build",
+  "version": "1.0.0",
+  "description": "Illustrative watch + bundle build for Shopify theme app extensions (flat assets, nested source).",
+  "license": "MIT",
+  "scripts": {
+    "build:watch": "tsx examples/watch.example.ts",
+    "build:bundle": "tsx examples/bundle.config.example.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@parcel/watcher": "^2.4.1",
+    "@types/node": "^20.14.10",
+    "esbuild": "^0.21.5",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4"
+  }
+}
