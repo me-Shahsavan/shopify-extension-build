@@ -16,6 +16,12 @@ Shopify's flat assets the instant a file is saved.
 > assistance for drafting; the design decisions are mine, and every claim in this
 > README is one I verified by running the build in this repo.
 
+![Two Shopify constraints and the slow loop they forced](docs/screenshots/01-the-problem.png)
+
+![Nested source compiled to Shopify's flat assets](docs/screenshots/02-nested-to-flat.png)
+
+![Before and after](docs/screenshots/03-before-after.png)
+
 ---
 
 ## The problem: the inner loop was killing team velocity
@@ -85,6 +91,8 @@ Three commands cover the lifecycle:
 
 ## Key design decisions
 
+![The watch build and the design decisions](docs/screenshots/04-watch-and-decisions.png)
+
 **1. Watch is a first-class developer experience, not an afterthought.**
 The inner loop determines daily velocity, so the watch build rebuilds the
 smallest thing the browser actually loads: the one bundle that owns the file you
@@ -144,6 +152,17 @@ npm install
 npm run build:bundle    # writes the flat assets, minified (the CI path)
 npm run build:watch     # then edit anything under src/ and watch it rebuild
 npm run typecheck
+```
+
+What the watch build prints, captured from this repo: a save, a typo, and the fix.
+
+```text
+👀 watching src/ … (Ctrl+C to stop)
+👀 widget-a/modules/init.ts  →  widget-a.bundle.js, widget-a.bundle.css  (66ms)
+❌ widget-a/modules/init.ts
+Transform failed with 1 error:
+<stdin>:7:15: ERROR: Unexpected ";"
+👀 widget-a/modules/init.ts  →  widget-a.bundle.js, widget-a.bundle.css  (9ms)
 ```
 
 `src/` is a small stand-in widget platform — enough real modules to exercise
